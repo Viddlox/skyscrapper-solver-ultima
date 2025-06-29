@@ -2,7 +2,7 @@ from typing import List, Set, Deque, Tuple, TypedDict, DefaultDict
 from collections import deque, defaultdict
 from enum import Enum
 from dataclasses import dataclass, field
-from .input_parser import parse_input
+from input_parser import parse_input
 
 class Actions(Enum):
     PROPAGATE_ROW_CONSTRAINTS = 1
