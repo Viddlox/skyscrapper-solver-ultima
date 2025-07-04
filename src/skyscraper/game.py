@@ -2,7 +2,8 @@ from typing import List, Set, Deque, Tuple, TypedDict, DefaultDict
 from collections import deque, defaultdict
 from enum import Enum
 from dataclasses import dataclass, field
-from input_parser import parse_input
+
+from .input_parser import parse_input
 
 class Actions(Enum):
     PROPAGATE_ROW_CONSTRAINTS = 1
@@ -53,7 +54,7 @@ class Game:
         return ' '.join(grid)
     
     def start(self, input_clues, input_prefill) -> str:
-        if not parse_input(input_clues, input_prefill):
+        if not parse_input(self, input_clues, input_prefill):
             return "Bad input argumemnt provided"
         return self.output_grid()
 

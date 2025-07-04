@@ -1,5 +1,5 @@
 from typing import List, Set
-from game import game
+from .game import game
 
 def constraint_list_factory() -> set:
     return set(i + 1 for i in range(game.n))

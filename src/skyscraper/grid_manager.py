@@ -1,5 +1,6 @@
 from typing import List, Tuple
-from game import game
+
+from .game import game
 
 
 def get_cell_indices_from_row_index(row_index: int) -> List[int]:
