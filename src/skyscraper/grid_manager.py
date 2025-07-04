@@ -1,41 +1,43 @@
 from typing import List, Tuple
 
-from .game import game
+def get_clue_indices_for_row(n: int, row_index: int) -> Tuple[int, int]:
+    """Get the left and right clue indices for a row"""
+    return (2 * n + row_index, 3 * n + row_index)
 
 
-def get_cell_indices_from_row_index(row_index: int) -> List[int]:
-    return [row_index * game.n + i for i in range(game.n)]
+def get_clue_indices_for_col(n: int, col_index: int) -> Tuple[int, int]:
+    """Get the top and bottom clue indices for a column"""
+    return (col_index, n + col_index)
 
 
-def get_cell_indices_from_col_index(col_index: int) -> List[int]:
-    return [col_index + i * game.n for i in range(game.n)]
+def get_clues_for_row(clues: List[int], n: int, row_index: int) -> Tuple[int, int]:
+    """Get the actual clue values (left, right) for a row"""
+    left_idx, right_idx = get_clue_indices_for_row(n, row_index)
+    return (clues[left_idx], clues[right_idx])
 
 
-def get_cell_indices_from_clue_index(clue_index: int) -> List[int]:
-    if clue_index < game.n:
-        return get_cell_indices_from_col_index(clue_index, game.n)
-    elif clue_index < 2 * game.n:
-        col_index = clue_index - game.n
-        return get_cell_indices_from_col_index(col_index, game.n)[::-1]
-    elif clue_index < 3 * game.n:
-        row_index = clue_index - 2 * game.n
-        return get_cell_indices_from_row_index(row_index, game.n)
-    elif clue_index < 4 * game.n:
-        row_index = clue_index - 3 * game.n
-        return get_cell_indices_from_row_index(row_index, game.n)[::-1]
+def get_clues_for_col(clues: List[int], n: int, col_index: int) -> Tuple[int, int]:
+    """Get the actual clue values (top, bottom) for a column"""
+    top_idx, bottom_idx = get_clue_indices_for_col(n, col_index)
+    return (clues[top_idx], clues[bottom_idx])
 
 
-def get_intersection_from_cell_index(cell_index: int) -> Tuple[int, int]:
-    return divmod(cell_index, game.n)
+def decode_clue_layout(clues: List[int], n: int) -> Tuple[List[int], List[int], List[int], List[int]]:
+    """
+    Decode flat clue list into directional clue lists.
+    """
+    top = clues[0:n]
+    bottom = clues[n:2*n]  
+    left = clues[2*n:3*n]
+    right = clues[3*n:4*n]
+    return (top, bottom, left, right)
 
 
-def get_cell_index_from_row_col(row: int, col: int) -> int:
-    return row * game.n + col
+def get_intersection_position(row_idx: int, col_idx: int) -> Tuple[int, int]:
+    """Get the intersection position - just returns the same coordinates"""
+    return (row_idx, col_idx)
 
 
-def get_clue_indices_for_row(row_index: int) -> Tuple[int, int]:
-    return (2 * game.n + row_index, 3 * game.n + row_index)
-
-
-def get_clue_indices_for_col(col_index: int) -> Tuple[int, int]:
-    return (col_index, game.n + col_index)
+def is_valid_position(row_idx: int, col_idx: int, n: int) -> bool:
+    """Check if row/col indices are valid for grid size n"""
+    return 0 <= row_idx < n and 0 <= col_idx < n
