@@ -1,28 +1,10 @@
-from typing import List, Set, Deque, Tuple, TypedDict, DefaultDict, TypeAlias, Union
+from typing import List, Set, Deque, Tuple, DefaultDict, Union
 from collections import deque, defaultdict
-from enum import Enum
 from dataclasses import dataclass, field
 
 from .input_parser import parse_input
-
-
-class Actions(Enum):
-    PROPAGATE_ROW_CONSTRAINTS = 1
-    PROPAGATE_COL_CONSTRAINTS = 2
-    ASSIGN_ROW_PERMUTATION = 3
-    ASSIGN_COL_PERMUTATION = 4
-
-
-class QueueItem(TypedDict):
-    type: Actions
-    index: int
-
-
-Permutation: TypeAlias = Tuple[int, ...]
-PermutationSet: TypeAlias = Set[Permutation]
-ClueConstraints: TypeAlias = Tuple[int, ...]
-IntersectionKey: TypeAlias = Tuple[Permutation, Permutation, int]
-Prefill: TypeAlias = Tuple[int, int, int]
+from .pre_compute import initialize_permutations
+from .constants import *
 
 
 @dataclass
@@ -41,12 +23,6 @@ class GameState:
     assigned_rows: Set[int]
     assigned_cols: Set[int]
     queue: Deque[QueueItem]
-
-
-class ConflictType(Enum):
-    EMPTY_PERMUTATION_SET = "empty_permutation_set"
-    INTERSECTION_INCOMPATIBILITY = "intersection_incompatibility"
-    CLUE_VIOLATION = "clue_violation"
 
 
 @dataclass
@@ -120,16 +96,46 @@ class Game:
         self.conflict_info = None
         return True
 
+    def isSolved(self) -> bool:
+        return all(len(row_perms) == 1 for row_perms in self.row_permutations)
+
     def output_grid(self) -> str:
+        if not self.isSolved():
+            print("not solved")
+            result = []
+            for row_idx in range(self.n):
+                row_line = []
+                for col_idx in range(self.n):
+                    possible_values = self.get_constrained_values(
+                        row_idx, col_idx)
+                    if len(possible_values) == 1:
+                        row_line.append(str(next(iter(possible_values))))
+                    else:
+                        row_line.append(str(possible_values))
+                result.append(' '.join(row_line))
+            return '\n'.join(result) + '\n'
         grid = []
-        for row_perms in self.row_permutations:
-            perm = next(iter(row_perms))
-            grid.extend(str(cell) for cell in perm)
-        return ' '.join(grid)
+        for _, row_perms in enumerate(self.row_permutations):
+            if len(row_perms) == 1:
+                perm = next(iter(row_perms))
+                grid.append(list(perm))
+            else:
+                grid.append(['?'] * self.n)
+        result = []
+        for row in grid:
+            result.append(' '.join(str(cell) for cell in row))
+        return '\n'.join(result) + '\n'
+
+    def get_constrained_values(self, row_idx: int, col_idx: int) -> Set[int]:
+        row_values = {perm[col_idx] for perm in self.row_permutations[row_idx]}
+        col_values = {perm[row_idx] for perm in self.col_permutations[col_idx]}
+        return row_values & col_values
 
     def start(self, input_clues, input_prefill) -> str:
+        self.reset()
         if not parse_input(self, input_clues, input_prefill):
-            return "Bad input argumemnt provided"
+            return "Bad input argument provided"
+        initialize_permutations(self)
         return self.output_grid()
 
 
