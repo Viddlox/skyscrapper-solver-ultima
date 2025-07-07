@@ -1,6 +1,6 @@
 import time
 
-def benchmark(func, *args, repeats=5):
+def benchmark(func, *args, repeats=1):
     durations, res = [], 0
     for _ in range(repeats):
         start = time.perf_counter()

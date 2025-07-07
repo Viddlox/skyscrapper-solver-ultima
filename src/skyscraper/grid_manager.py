@@ -1,8 +1,6 @@
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple
 
-if TYPE_CHECKING:
-    from .constants import Permutation
-
+from .constants import Permutation
 
 def get_clue_indices_for_row(n: int, row_index: int) -> Tuple[int, int]:
     """Get the left and right clue indices for a row"""
