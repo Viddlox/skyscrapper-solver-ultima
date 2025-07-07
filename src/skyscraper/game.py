@@ -101,7 +101,6 @@ class Game:
 
     def output_grid(self) -> str:
         if not self.isSolved():
-            print("not solved")
             result = []
             for row_idx in range(self.n):
                 row_line = []
