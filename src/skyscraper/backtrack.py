@@ -70,7 +70,6 @@ def get_least_constrained_perms(g: "Game", decision_type: str, idx: int, perms: 
                                   if row_perm[idx] != required_value)
         g.elimination_cache[cache_key] = eliminations
         return eliminations
-
     return sorted(perms, key=score_eliminations)
 
 

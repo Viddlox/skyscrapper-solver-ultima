@@ -7,9 +7,11 @@ def parse_input(g: "Game", input_clues: str, input_prefill: str) -> bool:
     if not input_clues.strip():
         return False
     try:
-        clues = [int(i) for i in input_clues.split()]
+        clean_input = input_clues.replace(" ", "")
+        clues = [int(char) for char in clean_input]
     except ValueError:
         return False
+
     if len(clues) % 4 != 0 or len(clues) < 8:
         return False
 

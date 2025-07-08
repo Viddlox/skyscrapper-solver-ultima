@@ -3,12 +3,13 @@ from functools import cache
 from itertools import permutations
 
 from .grid_manager import *
-from .constants import Actions, PermutationSet, Prefill
+from .constants import Actions, PermutationSet, Prefill, PreComputeDebugKey, PreComputeDebugValue
 if TYPE_CHECKING:
     from .game import Game
 
 
-def initialize_permutations(g: "Game") -> bool:
+def initialize_permutations(g: "Game", debug=False) -> bool:
+    print("Starting pre-computation..")
     for i in range(g.n):
         row_prefill_constraints = tuple(
             (col, val) for row, col, val in g.prefill_cells if row == i
@@ -16,22 +17,25 @@ def initialize_permutations(g: "Game") -> bool:
         left_clue, right_clue = get_clues_for_row(g.clues, g.n, i)
         valid_row_perms = generate_permutations(
             g.n, left_clue, right_clue, row_prefill_constraints)
-        print(f"Row {i} clues ({left_clue}, {right_clue}): {len(valid_row_perms)} permutations")
+
         if not valid_row_perms:
-            print(f"❌ No valid permutations for row {i}")
             return False
         g.row_permutations.append(valid_row_perms)
 
         col_prefill_constraints = tuple(
             (row, val) for row, col, val in g.prefill_cells if col == i
         )
-        print(f"Col {i} prefill constraints: {col_prefill_constraints}")
         top_clue, bottom_clue = get_clues_for_col(g.clues, g.n, i)
         valid_col_perms = generate_permutations(
             g.n, top_clue, bottom_clue, col_prefill_constraints)
-        print(f"Col {i} clues ({top_clue}, {bottom_clue}): {len(valid_col_perms)} permutations")
+
+        if debug:
+            row_debug_cache_key = PreComputeDebugKey("ROW", i)
+            g.pre_compute_debug_cache[row_debug_cache_key] = PreComputeDebugValue(left_clue, right_clue, len(valid_row_perms))
+            col_debug_cache_key = PreComputeDebugKey("COL", i)
+            g.pre_compute_debug_cache[col_debug_cache_key] = PreComputeDebugValue(top_clue, bottom_clue, len(valid_col_perms))
+
         if not valid_col_perms:
-            print(f"❌ No valid permutations for col {i}")
             return False
         g.col_permutations.append(valid_col_perms)
     
@@ -43,7 +47,6 @@ def initialize_permutations(g: "Game") -> bool:
 
 
 def initialize_propagation_queue(g: "Game") -> None:
-    """Add solved lines to queue for further propagation"""
     for i in range(g.n):
         if len(g.row_permutations[i]) == 1:
             g.queue.append(
@@ -57,7 +60,6 @@ def initialize_propagation_queue(g: "Game") -> None:
 
 
 def propagate_intersection_constraints(g: "Game") -> bool:
-    """Apply intersection constraints after initial generation"""
     changed = True
     while changed:
         changed = False
@@ -86,9 +88,7 @@ def propagate_intersection_constraints(g: "Game") -> bool:
                 # Check for empty permutation sets (conflict)
                 if (len(g.row_permutations[row_idx]) == 0 or 
                     len(g.col_permutations[col_idx]) == 0):
-                    print(f"❌ Conflict detected at intersection ({row_idx}, {col_idx})")
                     return False
-    
     return True
 
 

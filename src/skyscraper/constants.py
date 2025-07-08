@@ -1,4 +1,4 @@
-from typing import List, Set, Deque, Tuple, TypedDict, TypeAlias, Dict
+from typing import List, Set, Deque, Tuple, TypedDict, TypeAlias, Dict, NamedTuple
 from enum import Enum
 from dataclasses import dataclass
 
@@ -26,6 +26,17 @@ EliminationKey: TypeAlias = Tuple[str, int, Permutation, int]
 EliminationCache: TypeAlias = Dict[EliminationKey, int]
 
 
+class PreComputeDebugKey(NamedTuple):
+    line_type: str
+    index: int
+    
+class PreComputeDebugValue(NamedTuple):
+    clue_start: int
+    clue_end: int
+    prevCount: int
+
+PreComputeDebugCache: TypeAlias = Dict[PreComputeDebugKey, PreComputeDebugValue]
+
 @dataclass
 class DecisionPoint:
     decision_type: str
@@ -36,7 +47,6 @@ class DecisionPoint:
 
 @dataclass
 class GameState:
-    """Snapshot of game state for restoration"""
     row_permutations: List[PermutationSet]
     col_permutations: List[PermutationSet]
     assigned_rows: Set[int]

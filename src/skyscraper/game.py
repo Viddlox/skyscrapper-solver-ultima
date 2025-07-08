@@ -24,6 +24,7 @@ class Game:
     assigned_cols: Set[int] = field(default_factory=set)
     decision_stack: List[DecisionPoint] = field(default_factory=list)
     state_snapshots: List[GameState] = field(default_factory=list)
+    pre_compute_debug_cache: PreComputeDebugCache = field(default_factory=dict)
 
     def cleanup_caches(self) -> None:
         if len(self.elimination_cache) > MAX_ELIMINATION_CACHE_SIZE:
@@ -49,9 +50,9 @@ class Game:
         self.decision_stack.clear()
         self.state_snapshots.clear()
         self.elimination_cache.clear()
+        self.pre_compute_debug_cache.clear()
 
     def save_state(self) -> None:
-        """Save current state before making a decision"""
         snapshot = GameState(
             row_permutations=[perms.copy() for perms in self.row_permutations],
             col_permutations=[perms.copy() for perms in self.col_permutations],
@@ -62,7 +63,6 @@ class Game:
         self.state_snapshots.append(snapshot)
 
     def restore_state(self) -> bool:
-        """Restore to previous state, return False if no states to restore"""
         if not self.state_snapshots:
             return False
 
@@ -95,28 +95,37 @@ class Game:
         col_values = {perm[row_idx] for perm in self.col_permutations[col_idx]}
         return row_values & col_values
 
-    def start(self, input_clues, input_prefill) -> str:
+    def start(self, input_clues: str, input_prefill: str, debug=False) -> str:
         self.reset()
         if not parse_input(self, input_clues, input_prefill):
-            return "Bad input argument provided"
+            return "Bad input argument provided"            
         
-        print(f"Grid size: {self.n}x{self.n}")
-        print(f"Clues: {self.clues}")
-        
-        if not initialize_permutations(self):
+        if not initialize_permutations(self, debug):
             return "Unsolvable during pre-computation"
         
-        # Debug: Check permutation counts after initialization
-        print("Permutation counts after initialization:")
-        for i in range(self.n):
-            print(f"Row {i}: {len(self.row_permutations[i])} permutations")
-            print(f"Col {i}: {len(self.col_permutations[i])} permutations")
-        
+        if debug:
+            print("\n== Pre-computation Summary ==")
+            print(f"Grid size: {self.n}x{self.n}")
+            print(f"Clues: {self.clues}\n")
+
+            print(f"{'Line':<4} | {'Idx':^3} | {'Clues (Start-End)':^17} | {'Pruned From → To':^18} | {'Reduction':>9}")
+            print("-" * 65)
+
+            for i in range(self.n):
+                for line_type in ["ROW", "COL"]:
+                    key = PreComputeDebugKey(line_type, i)
+                    info = self.pre_compute_debug_cache.get(key)
+                    if not info:
+                        continue
+                    current_len = len(self.row_permutations[i]) if line_type == "ROW" else len(self.col_permutations[i])
+                    reduction_pct = 100.0 * (1 - current_len / info.prevCount) if info.prevCount else 0.0
+                    print(f"{line_type:<4} | {i:^3} | ({info.clue_start},{info.clue_end}){'':<12} | {info.prevCount:>6} → {current_len:<5} | {reduction_pct:>8.1f}%")
+
         if self.isSolved():
             print("Solved by pre-computation!")
             return self.output_grid()
         
-        print("Starting backtracking...")
+        print("\nStarting backtracking...\n")
         if not backtrack(self):
             return "No solution found"
         return self.output_grid()
