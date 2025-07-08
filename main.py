@@ -5,7 +5,7 @@ from src.utils.benchmark import benchmark
 
 def main():
     parser = argparse.ArgumentParser(
-        description="🧱 Skyscraper Puzzle Solver",
+        description="🧱 NxN Skyscraper Puzzle Solver",
         epilog=(
             "Example usage:\n"
             "  python3 main.py '2123232123142221'\n"

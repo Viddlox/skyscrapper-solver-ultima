@@ -24,18 +24,22 @@ Prefill: TypeAlias = Tuple[int, int, int]
 # (decision_type, idx, permutation, state_hash)
 EliminationKey: TypeAlias = Tuple[str, int, Permutation, int]
 EliminationCache: TypeAlias = Dict[EliminationKey, int]
-
+IntersectionConstraints: TypeAlias = Tuple[Tuple[int, frozenset[int]], ...]
 
 class PreComputeDebugKey(NamedTuple):
     line_type: str
     index: int
-    
+
+
 class PreComputeDebugValue(NamedTuple):
     clue_start: int
     clue_end: int
     prevCount: int
 
-PreComputeDebugCache: TypeAlias = Dict[PreComputeDebugKey, PreComputeDebugValue]
+
+PreComputeDebugCache: TypeAlias = Dict[PreComputeDebugKey,
+                                       PreComputeDebugValue]
+
 
 @dataclass
 class DecisionPoint:

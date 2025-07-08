@@ -16,6 +16,7 @@ class Game:
     n: int = 0
     prefill_cells: Set[Prefill] = field(default_factory=set)
     queue: Deque[QueueItem] = field(default_factory=deque)
+    dirty_intersections: Set[Tuple[int, int]] = field(default_factory=set)
     intersection_cache: DefaultDict[IntersectionKey, bool] = field(
         default_factory=lambda: defaultdict(bool)
     )
@@ -31,7 +32,7 @@ class Game:
             recent_keys = list(self.elimination_cache.keys())[-1000:]
             new_cache = {k: self.elimination_cache[k] for k in recent_keys}
             self.elimination_cache = new_cache
-        
+
         if len(self.intersection_cache) > MAX_INTERSECTION_CACHE_SIZE:
             recent_keys = list(self.intersection_cache.keys())[-1000:]
             new_cache = {k: self.intersection_cache[k] for k in recent_keys}
@@ -51,6 +52,7 @@ class Game:
         self.state_snapshots.clear()
         self.elimination_cache.clear()
         self.pre_compute_debug_cache.clear()
+        self.dirty_intersections.clear()
 
     def save_state(self) -> None:
         snapshot = GameState(
@@ -98,33 +100,37 @@ class Game:
     def start(self, input_clues: str, input_prefill: str, debug=False) -> str:
         self.reset()
         if not parse_input(self, input_clues, input_prefill):
-            return "Bad input argument provided"            
+            return "Bad input argument provided"
         
+        print("\n== Grid Details ==")
+        print(f"Grid size: {self.n}x{self.n}")
+        print(f"Clues: {self.clues}\n")
+
         if not initialize_permutations(self, debug):
             return "Unsolvable during pre-computation"
-        
+
         if debug:
             print("\n== Pre-computation Summary ==")
-            print(f"Grid size: {self.n}x{self.n}")
-            print(f"Clues: {self.clues}\n")
-
-            print(f"{'Line':<4} | {'Idx':^3} | {'Clues (Start-End)':^17} | {'Pruned From → To':^18} | {'Reduction':>9}")
+            print(
+                f"{'Line':<4} | {'Idx':^3} | {'Clues (Start-End)':^17} | {'Pruned From → To':^18} | {'Reduction':>9}")
             print("-" * 65)
-
             for i in range(self.n):
                 for line_type in ["ROW", "COL"]:
                     key = PreComputeDebugKey(line_type, i)
                     info = self.pre_compute_debug_cache.get(key)
                     if not info:
                         continue
-                    current_len = len(self.row_permutations[i]) if line_type == "ROW" else len(self.col_permutations[i])
-                    reduction_pct = 100.0 * (1 - current_len / info.prevCount) if info.prevCount else 0.0
-                    print(f"{line_type:<4} | {i:^3} | ({info.clue_start},{info.clue_end}){'':<12} | {info.prevCount:>6} → {current_len:<5} | {reduction_pct:>8.1f}%")
+                    current_len = len(self.row_permutations[i]) if line_type == "ROW" else len(
+                        self.col_permutations[i])
+                    reduction_pct = 100.0 * \
+                        (1 - current_len / info.prevCount) if info.prevCount else 0.0
+                    print(
+                        f"{line_type:<4} | {i:^3} | ({info.clue_start},{info.clue_end}){'':<12} | {info.prevCount:>6} → {current_len:<5} | {reduction_pct:>8.1f}%")
 
         if self.isSolved():
             print("Solved by pre-computation!")
             return self.output_grid()
-        
+
         print("\nStarting backtracking...\n")
         if not backtrack(self):
             return "No solution found"

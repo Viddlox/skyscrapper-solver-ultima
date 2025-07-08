@@ -18,7 +18,7 @@ def parse_input(g: "Game", input_clues: str, input_prefill: str) -> bool:
     n = len(clues) // 4
     max_clue_count = 0
     for clue in clues:
-        if not (1 <= clue <= n):
+        if not (0 <= clue <= n):  # Allow 0 for missing clues
             return False
         if clue == n:
             max_clue_count += 1
