@@ -41,9 +41,9 @@ def main():
     args = parser.parse_args()
     g = Game()
     if args.debug:
-        benchmark(g.start, args.clues, args.prefill, args.debug)
+        benchmark(g.start, args.clues, args.prefill)
     else:
-        print('\n' + g.start(args.clues, args.prefill, args.debug))
+        print('\n' + g.start(args.clues, args.prefill))
 
 
 if __name__ == "__main__":

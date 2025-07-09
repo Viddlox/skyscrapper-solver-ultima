@@ -2,22 +2,23 @@ from typing import TYPE_CHECKING, Tuple
 from functools import cache
 from itertools import permutations
 
-from .grid_manager import *
-from .constants import Actions, PermutationSet, Prefill, PreComputeDebugKey, PreComputeDebugValue
+from .grid_manager_perm import *
+from .constants import Actions, PermutationSet, Prefill
 
 if TYPE_CHECKING:
     from .game import Game
 
 
-def initialize_permutations(g: "Game", debug=False) -> bool:
-    print("Starting pre-computation..")
+def initialize_permutations(g: "Game") -> bool:
+    g.full_domain = tuple(range(1, g.n + 1))
+    g.cell_range = tuple(range(1, g.n))
     for i in range(g.n):
-        row_prefill_constraints = tuple(
+        row_prefill_constraints = tuple(sorted(
             (col, val) for row, col, val in g.prefill_cells if row == i
-        )
+        ))
         left_clue, right_clue = get_clues_for_row(g.clues, g.n, i)
         valid_row_perms = generate_permutations(
-            g.n, left_clue, right_clue, row_prefill_constraints
+            g.n, g.full_domain, g.cell_range, left_clue, right_clue, row_prefill_constraints
         )
 
         if not valid_row_perms:
@@ -26,12 +27,12 @@ def initialize_permutations(g: "Game", debug=False) -> bool:
         for col_idx in range(g.n):
             g.dirty_intersections.add((i, col_idx))
 
-        col_prefill_constraints = tuple(
+        col_prefill_constraints = tuple(sorted(
             (row, val) for row, col, val in g.prefill_cells if col == i
-        )
+        ))
         top_clue, bottom_clue = get_clues_for_col(g.clues, g.n, i)
         valid_col_perms = generate_permutations(
-            g.n, top_clue, bottom_clue, col_prefill_constraints
+            g.n, g.full_domain, g.cell_range, top_clue, bottom_clue, col_prefill_constraints
         )
 
         if not valid_col_perms:
@@ -39,14 +40,6 @@ def initialize_permutations(g: "Game", debug=False) -> bool:
         g.col_permutations.append(valid_col_perms)
         for row_idx in range(g.n):
             g.dirty_intersections.add((row_idx, i))
-
-        if debug:
-            g.pre_compute_debug_cache[PreComputeDebugKey("ROW", i)] = PreComputeDebugValue(
-                left_clue, right_clue, len(valid_row_perms)
-            )
-            g.pre_compute_debug_cache[PreComputeDebugKey("COL", i)] = PreComputeDebugValue(
-                top_clue, bottom_clue, len(valid_col_perms)
-            )
 
     if not propagate_intersection_constraints(g):
         return False
@@ -107,16 +100,20 @@ def initialize_propagation_queue(g: "Game") -> None:
 
 @cache
 def generate_permutations(
-    n: int, clue: int, opp_clue: int, prefill_constraints: Tuple[Prefill, ...]
+    n: int, full_domain: Tuple[int, ...], cell_range: Tuple[int, ...],
+    clue: int, opp_clue: int, prefill_constraints: Tuple[Prefill, ...]
 ) -> PermutationSet:
-    full_domain = tuple(range(1, n + 1))
-    remaining = tuple(range(1, n))  # used for clue == 1 or opp_clue == 1
 
-    check_prefill = (
-        (lambda perm: all(perm[pos] ==
-         val for pos, val in prefill_constraints))
-        if prefill_constraints else (lambda _: True)
-    )
+    if 1 <= len(prefill_constraints) <= 3:
+        return resolve_prefilled_permutations(
+            n, full_domain, clue, opp_clue, prefill_constraints
+        )
+
+    if not prefill_constraints:
+        def check_prefill(_): return True
+    else:
+        def check_prefill(perm): return all(
+            perm[pos] == val for pos, val in prefill_constraints)
 
     if clue == 0 and opp_clue == 0:
         return {
@@ -134,13 +131,13 @@ def generate_permutations(
 
     if clue == 1:
         return {
-            (n,) + perm for perm in permutations(remaining)
+            (n,) + perm for perm in permutations(cell_range)
             if check_prefill((n,) + perm) and count_visible_reverse((n,) + perm) == opp_clue
         }
 
     if opp_clue == 1:
         return {
-            perm + (n,) for perm in permutations(remaining)
+            perm + (n,) for perm in permutations(cell_range)
             if check_prefill(perm + (n,)) and count_visible_start(perm + (n,)) == clue
         }
 
@@ -162,3 +159,33 @@ def generate_permutations(
         and count_visible_start(perm) == clue
         and count_visible_reverse(perm) == opp_clue
     }
+
+
+@cache
+def resolve_prefilled_permutations(
+    n: int, full_domain: Tuple[int, ...], clue: int, opp_clue: int,
+    prefill_constraints: Tuple[Prefill, ...]
+) -> PermutationSet:
+
+    template = [None] * n
+    used_values = set()
+
+    for pos, val in prefill_constraints:
+        template[pos] = val
+        used_values.add(val)
+
+    free_positions = [i for i in range(n) if template[i] is None]
+    available_values = tuple(v for v in full_domain if v not in used_values)
+
+    valid_perms = set()
+    for perm_values in permutations(available_values):
+        complete = template[:]
+        for i, pos in enumerate(free_positions):
+            complete[pos] = perm_values[i]
+
+        perm_tuple = tuple(complete)
+        if ((clue == 0 or count_visible_start(perm_tuple) == clue) and
+                (opp_clue == 0 or count_visible_reverse(perm_tuple) == opp_clue)):
+            valid_perms.add(perm_tuple)
+
+    return valid_perms
