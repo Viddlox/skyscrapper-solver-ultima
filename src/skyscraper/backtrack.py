@@ -84,20 +84,14 @@ def make_assignment_forward_check(g: "Game", decision_type: str, idx: int, permu
         g.row_permutations[idx] = {permutation}
         g.assigned_rows.add(idx)
         g.queue.append({"type": Actions.ASSIGN_ROW_PERMUTATION, "index": idx})
-        
-        # Mark all intersections in this row as dirty
         for col in range(len(g.col_permutations)):
             g.dirty_intersections.add((idx, col))
     else:
         g.col_permutations[idx] = {permutation}
         g.assigned_cols.add(idx)
         g.queue.append({"type": Actions.ASSIGN_COL_PERMUTATION, "index": idx})
-        
-        # Mark all intersections in this column as dirty
         for row in range(len(g.row_permutations)):
             g.dirty_intersections.add((row, idx))
-
-    # Forward checking: propagate constraints and detect conflicts early
     try:
         success = propagate_intersection_constraints(g)
         if not success:
