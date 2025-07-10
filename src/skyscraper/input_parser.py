@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 from .constants import CELL_POE_PREFILL_THRESHOLD
-from .pre_solve_cell_poe import queue_processor
 
 if TYPE_CHECKING:
     from .game import Game
@@ -30,11 +29,10 @@ def parse_input(g: "Game", input_clues: str, input_prefill: str) -> bool:
 
     g.clues = clues
     g.n = n
-    g.grid_cell_poe = g.grid_factory()
 
     if input_prefill.strip():
         try:
-            process_prefilled_cells(g, input_prefill.strip())
+            process_prefilled_cells(g, input_prefill.strip().split())
         except ValueError:
             return False
 
@@ -47,7 +45,8 @@ def parse_input(g: "Game", input_clues: str, input_prefill: str) -> bool:
 
 
 def process_prefilled_cells(g: "Game", input_prefill: str) -> None:
-    for curr in input_prefill.split():
+    g.grid_cell_poe = g.grid_factory()
+    for curr in input_prefill:
         parts = curr.split(',')
         if len(parts) != 3:
             raise ValueError(f"Invalid prefill format: {curr}")
@@ -63,5 +62,4 @@ def process_prefilled_cells(g: "Game", input_prefill: str) -> None:
         col -= 1
         g.prefill_cells.add((row, col, val))
         cell_index = (row) * g.n + (col)
-        g.set_fixed_cell(cell_index, val)
-    queue_processor(g)
+        g.set_fixed_cell_poe(cell_index, val)

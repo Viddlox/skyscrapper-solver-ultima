@@ -1,5 +1,5 @@
 from typing import List, Set, TYPE_CHECKING, Optional
-from .grid_manager_cell_poe import get_cell_indices_from_clue_index, get_cross_indices_from_cell_index, get_cell_indices_from_col_index, get_cell_indices_from_row_index
+from .grid_manager_cell_poe import get_cell_indices_from_clue_index, get_cross_indices_from_cell_index
 from .pre_solve_cell_poe import resolve_and_enqueue, queue_processor
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ def get_most_constrained_cell_optimized(g: "Game") -> Optional[int]:
     min_choices = float('inf')
     best_cell = None
     for i, cell in enumerate(g.grid_cell_poe):
-        if len(cell) > 1 and i not in g.prefill_cells_cell_poe:
+        if len(cell) > 1 and i not in g.prefill_cells_poe:
             choice_count = len(cell)
             if choice_count == 2:
                 return i

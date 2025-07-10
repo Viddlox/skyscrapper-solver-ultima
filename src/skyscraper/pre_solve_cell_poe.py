@@ -32,7 +32,7 @@ def queue_processor(g: "Game") -> None:
 
 
 def constrain_and_enqueue(cell_index: int, value_to_delete: int, g: "Game") -> None:
-    if cell_index in g.prefill_cells_cell_poe:
+    if cell_index in g.prefill_cells_poe:
         return
 
     cell = g.grid_cell_poe[cell_index]
@@ -58,7 +58,7 @@ def constrain_and_enqueue(cell_index: int, value_to_delete: int, g: "Game") -> N
 
 
 def resolve_and_enqueue(cell_index: int, value_to_resolve_to: int, g: "Game") -> None:
-    if cell_index in g.prefill_cells_cell_poe:
+    if cell_index in g.prefill_cells_poe:
         return
 
     for cell_value in list(g.grid_cell_poe[cell_index]):

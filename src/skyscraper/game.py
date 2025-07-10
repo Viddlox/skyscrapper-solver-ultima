@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from .input_parser import parse_input
 from .pre_solve_perm import initialize_permutations
-from .pre_solve_cell_poe import init_edge_clue_constraints
+from .pre_solve_cell_poe import init_edge_clue_constraints, queue_processor
 from .backtrack_perm import backtrack
 from .backtrack_cell_poe import backtrack as backtrack_poe
 from .constants import *
@@ -33,7 +33,7 @@ class Game:
     queue_cell_poe: Deque[QueueItem] = field(default_factory=deque)
     intersection_cache_cell_poe: Dict[int,
                                       List[int]] = field(default_factory=dict)
-    prefill_cells_cell_poe: Set[int] = field(default_factory=set)
+    prefill_cells_poe: Set[int] = field(default_factory=set)
     should_use_cell_poe: bool = False
     poe_state_snapshots: List['POEGameState'] = field(default_factory=list)
 
@@ -66,7 +66,7 @@ class Game:
         self.full_domain = ()
         self.grid_cell_poe.clear()
         self.queue_cell_poe.clear()
-        self.prefill_cells_cell_poe.clear()
+        self.prefill_cells_poe.clear()
         self.intersection_cache_cell_poe = defaultdict(list)
         self.should_use_cell_poe = False
         self.poe_state_snapshots.clear()
@@ -99,7 +99,7 @@ class Game:
     def save_poe_state(self) -> None:
         snapshot = POEGameState(
             grid=[frozenset(cell) for cell in self.grid_cell_poe],
-            fixed_cells=frozenset(self.prefill_cells_cell_poe),
+            fixed_cells=frozenset(self.prefill_cells_poe),
             queue=self.queue_cell_poe.copy()
         )
         self.poe_state_snapshots.append(snapshot)
@@ -109,7 +109,7 @@ class Game:
             return False
         snapshot = self.poe_state_snapshots.pop()
         self.grid_cell_poe = [set(cell) for cell in snapshot.grid]
-        self.prefill_cells_cell_poe = set(snapshot.fixed_cells)
+        self.prefill_cells_poe = set(snapshot.fixed_cells)
         self.queue_cell_poe = snapshot.queue
         return True
 
@@ -137,17 +137,12 @@ class Game:
             result.append(' '.join(str(cell) for cell in row))
         return '\n'.join(result) + '\n'
 
-    def get_constrained_values(self, row_idx: int, col_idx: int) -> Set[int]:
-        row_values = {perm[col_idx] for perm in self.row_permutations[row_idx]}
-        col_values = {perm[row_idx] for perm in self.col_permutations[col_idx]}
-        return row_values & col_values
-
-    def set_fixed_cell(self, cell_index: int, value: int) -> None:
+    def set_fixed_cell_poe(self, cell_index: int, value: int) -> None:
         if not (1 <= value <= self.n):
             raise ValueError(f"Invalid value {value} for cell {cell_index}")
 
         self.grid_cell_poe[cell_index] = {value}
-        self.prefill_cells_cell_poe.add(cell_index)
+        self.prefill_cells_poe.add(cell_index)
 
         self.queue_cell_poe.append({
             'type': Actions.PROPAGATE_CONSTRAINTS_FROM_RESOLVED_CELL,
@@ -171,6 +166,7 @@ class Game:
 
         if self.should_use_cell_poe:
             print("Starting pre-solve via cell POE..\n")
+            queue_processor(self)
             init_edge_clue_constraints(self)
             if self.is_solved():
                 print("Solved by cell POE!")
