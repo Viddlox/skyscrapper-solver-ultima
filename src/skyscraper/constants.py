@@ -5,7 +5,7 @@ from collections import deque
 
 MAX_ELIMINATION_CACHE_SIZE = 5000
 MAX_INTERSECTION_CACHE_SIZE = 5000
-CELL_POE_PREFILL_THRESHOLD = 0.15
+CELL_SOLVE_PREFILL_THRESHOLD = 0.15
 
 
 class Actions(Enum):
@@ -47,7 +47,7 @@ class GameState:
 
 
 @dataclass
-class POEGameState:
+class CellSolveGameState:
     grid: List[Set[int]] = field(default_factory=list)
     fixed_cells: Set[int] = field(default_factory=set)
     queue: Deque = field(default_factory=deque)

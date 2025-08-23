@@ -1,5 +1,5 @@
 from .constants import Actions
-from .grid_manager_cell_poe import get_cell_indices_from_clue_index, get_cross_indices_from_cell_index, get_cell_indices_from_row_index, get_cell_indices_from_col_index
+from .grid_manager_cell import get_cell_indices_from_clue_index, get_cross_indices_from_cell_index, get_cell_indices_from_row_index, get_cell_indices_from_col_index
 
 from typing import TYPE_CHECKING
 
@@ -22,20 +22,20 @@ def init_edge_clue_constraints(g: "Game") -> None:
 
 
 def queue_processor(g: "Game") -> None:
-    while g.queue_cell_poe:
-        action = g.queue_cell_poe.popleft()
+    while g.queue_cell:
+        action = g.queue_cell.popleft()
         if action['type'] == Actions.PROPAGATE_CONSTRAINTS_FROM_RESOLVED_CELL:
             propagate_from_resolved_cell(action['cell_index'], g)
 
-        if len(g.queue_cell_poe) % 5 == 0:
+        if len(g.queue_cell) % 5 == 0:
             find_hidden_singles(g)
 
 
 def constrain_and_enqueue(cell_index: int, value_to_delete: int, g: "Game") -> None:
-    if cell_index in g.prefill_cells_poe:
+    if cell_index in g.prefills_cell:
         return
 
-    cell = g.grid_cell_poe[cell_index]
+    cell = g.grid_cell[cell_index]
 
     if len(cell) == 1 and value_to_delete in cell:
         raise ValueError(
@@ -48,40 +48,40 @@ def constrain_and_enqueue(cell_index: int, value_to_delete: int, g: "Game") -> N
         raise ValueError(f"Cell {cell_index} is empty")
 
     if is_mutated and len(cell) == 1:
-        g.queue_cell_poe.append({
+        g.queue_cell.append({
             'type': Actions.PROPAGATE_CONSTRAINTS_FROM_RESOLVED_CELL,
             'cell_index': cell_index
         })
 
     if is_mutated:
-        poe_search_and_enqueue(cell_index, value_to_delete, g)
+        search_and_enqueue(cell_index, value_to_delete, g)
 
 
 def resolve_and_enqueue(cell_index: int, value_to_resolve_to: int, g: "Game") -> None:
-    if cell_index in g.prefill_cells_poe:
+    if cell_index in g.prefills_cell:
         return
 
-    for cell_value in list(g.grid_cell_poe[cell_index]):
+    for cell_value in list(g.grid_cell[cell_index]):
         if cell_value != value_to_resolve_to:
             constrain_and_enqueue(cell_index, cell_value, g)
 
 
-def poe_search_and_enqueue(modified_cell_index: int, deleted_value: int, g: "Game") -> None:
+def search_and_enqueue(modified_cell_index: int, deleted_value: int, g: "Game") -> None:
     cross_indices = get_cross_indices_from_cell_index(
-        modified_cell_index, g.n, g.intersection_cache_cell_poe)
+        modified_cell_index, g.n, g.intersection_cache_cell)
     filtered_indices = [
-        i for i in cross_indices if deleted_value in g.grid_cell_poe[i]]
+        i for i in cross_indices if deleted_value in g.grid_cell[i]]
     if len(filtered_indices) == 1:
         resolve_and_enqueue(filtered_indices[0], deleted_value, g)
 
 
 def propagate_from_resolved_cell(cell_index: int, g: "Game") -> None:
-    cell = g.grid_cell_poe[cell_index]
+    cell = g.grid_cell[cell_index]
     if len(cell) > 1:
         raise Exception("Constraint propagation on a non-resolved cell!")
     value_to_eliminate = next(iter(cell))
     cross_indices = get_cross_indices_from_cell_index(
-        cell_index, g.n, g.intersection_cache_cell_poe)
+        cell_index, g.n, g.intersection_cache_cell)
     for idx in cross_indices:
         constrain_and_enqueue(idx, value_to_eliminate, g)
 
@@ -99,10 +99,10 @@ def find_hidden_singles(g: "Game") -> None:
 
         for value in range(1, g.n + 1):
             possible_row_cells = [
-                i for i in row_indices if value in g.grid_cell_poe[i]]
+                i for i in row_indices if value in g.grid_cell[i]]
             if len(possible_row_cells) == 1:
                 resolve_and_enqueue(possible_row_cells[0], value, g)
             possible_col_cells = [
-                i for i in col_indices if value in g.grid_cell_poe[i]]
+                i for i in col_indices if value in g.grid_cell[i]]
             if len(possible_col_cells) == 1:
                 resolve_and_enqueue(possible_col_cells[0], value, g)

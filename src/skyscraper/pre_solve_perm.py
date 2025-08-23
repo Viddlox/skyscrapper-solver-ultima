@@ -14,7 +14,7 @@ def initialize_permutations(g: "Game") -> bool:
     g.cell_range = tuple(range(1, g.n))
     for i in range(g.n):
         row_prefill_constraints = tuple(sorted(
-            (col, val) for row, col, val in g.prefill_cells if row == i
+            (col, val) for row, col, val in g.prefills if row == i
         ))
         left_clue, right_clue = get_clues_for_row(g.clues, g.n, i)
         valid_row_perms = generate_permutations(
@@ -28,7 +28,7 @@ def initialize_permutations(g: "Game") -> bool:
             g.dirty_intersections.add((i, col_idx))
 
         col_prefill_constraints = tuple(sorted(
-            (row, val) for row, col, val in g.prefill_cells if col == i
+            (row, val) for row, col, val in g.prefills if col == i
         ))
         top_clue, bottom_clue = get_clues_for_col(g.clues, g.n, i)
         valid_col_perms = generate_permutations(
