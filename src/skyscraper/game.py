@@ -1,4 +1,4 @@
-from typing import List, Set, Deque, DefaultDict
+from typing import List, Set, Deque, Dict
 from collections import deque, defaultdict
 from dataclasses import dataclass, field
 
@@ -21,14 +21,11 @@ class Game:
     prefills: Set[Prefill] = field(default_factory=set)
     queue: Deque[QueueItem] = field(default_factory=deque)
     dirty_intersections: Set[Tuple[int, int]] = field(default_factory=set)
-    intersection_cache: DefaultDict[IntersectionKey, bool] = field(
-        default_factory=lambda: defaultdict(bool)
-    )
-    elimination_cache: EliminationCache = field(default_factory=dict)
     assigned_rows: Set[int] = field(default_factory=set)
     assigned_cols: Set[int] = field(default_factory=set)
-    decision_stack: List[DecisionPoint] = field(default_factory=list)
     state_snapshots: List[GameState] = field(default_factory=list)
+
+    # cell solver specific structures
     grid_cell: List[Set[int]] = field(default_factory=list)
     queue_cell: Deque[QueueItem] = field(default_factory=deque)
     intersection_cache_cell: Dict[int,
@@ -38,17 +35,6 @@ class Game:
     cell_state_snapshots: List['CellSolveGameState'] = field(
         default_factory=list)
 
-    def cleanup_caches(self) -> None:
-        if len(self.elimination_cache) > MAX_ELIMINATION_CACHE_SIZE:
-            recent_keys = list(self.elimination_cache.keys())[-1000:]
-            new_cache = {k: self.elimination_cache[k] for k in recent_keys}
-            self.elimination_cache = new_cache
-
-        if len(self.intersection_cache) > MAX_INTERSECTION_CACHE_SIZE:
-            recent_keys = list(self.intersection_cache.keys())[-1000:]
-            new_cache = {k: self.intersection_cache[k] for k in recent_keys}
-            self.intersection_cache = new_cache
-
     def reset(self):
         self.row_permutations = []
         self.col_permutations = []
@@ -56,12 +42,9 @@ class Game:
         self.n = 0
         self.prefills.clear()
         self.queue.clear()
-        self.intersection_cache = defaultdict(bool)
         self.assigned_rows.clear()
         self.assigned_cols.clear()
-        self.decision_stack.clear()
         self.state_snapshots.clear()
-        self.elimination_cache.clear()
         self.dirty_intersections.clear()
         self.cell_range = ()
         self.full_domain = ()
@@ -161,16 +144,15 @@ class Game:
         if not parse_input(self, input_clues, input_prefill):
             return "Bad input argument provided"
 
-        print("\n== Grid Details ==")
-        print(f"Grid size: {self.n}x{self.n}")
+        print(f"\nGrid size: {self.n}x{self.n}\n")
         print(f"Clues: {self.clues}\n")
 
         if self.should_use_cell_solve:
-            print("Starting pre-solve via cell..\n")
+            print("Starting pre-solve via cell constraining..\n")
             queue_processor(self)
             init_edge_clue_constraints(self)
             if self.is_solved():
-                print("Solved by cell method!")
+                print("Solved by cell constraining!")
                 return self.output_grid()
             else:
                 if backtrack_cell(self):
@@ -191,4 +173,5 @@ class Game:
         print("\nStarting backtracking...\n")
         if not backtrack(self):
             return "No solution found\n"
+        print("Solved by permutation method backtracking")
         return self.output_grid()

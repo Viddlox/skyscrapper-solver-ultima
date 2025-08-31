@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Tuple, Optional, Set, List
 from .grid_manager_perm import *
-from .constants import Actions, Permutation, DecisionPoint
+from .constants import Actions, Permutation
 from .pre_solve_perm import propagate_intersection_constraints
 
 if TYPE_CHECKING:
@@ -11,32 +11,23 @@ def backtrack(g: "Game") -> bool:
     if g.is_solved():
         return True
 
-    if len(g.decision_stack) % 100 == 0:
-        g.cleanup_caches()
-
-    decision_type, idx = get_most_constrained_line(g)
-    if decision_type is None:
+    action, idx = get_most_constrained_line(g)
+    if action is None:
         return False
 
-    perms = g.row_permutations[idx] if decision_type == "row" else g.col_permutations[idx]
-    sorted_perms = get_least_constrained_perms(g, decision_type, idx, perms)
+    perms = g.row_permutations[idx] if action == Actions.ASSIGN_ROW_PERMUTATION else g.col_permutations[idx]
+    sorted_perms = get_least_constrained_perms(g, action, perms)
 
     for permutation in sorted_perms:
         g.save_state()
-        if make_assignment_forward_check(g, decision_type, idx, permutation):
-            eliminated = perms - {permutation}
-            decision = DecisionPoint(
-                decision_type, idx, permutation, eliminated)
-            g.decision_stack.append(decision)
+        if make_assignment_forward_check(g, action, idx, permutation):
             if backtrack(g):
                 return True
-            g.decision_stack.pop()
         g.restore_state()
     return False
 
-
-def get_most_constrained_line(g: "Game") -> Tuple[Optional[str], Optional[int]]:
-    best_type, best_idx, best_count = None, None, float('inf')
+def get_most_constrained_line(g: "Game") -> Tuple[Optional[Actions], Optional[int]]:
+    best_action, best_idx, best_count = None, None, float('inf')
 
     for i, perms in enumerate(g.row_permutations):
         if i not in g.assigned_rows:
@@ -44,9 +35,9 @@ def get_most_constrained_line(g: "Game") -> Tuple[Optional[str], Optional[int]]:
             if perm_count == 0:
                 return None, None
             if perm_count == 2:
-                return "row", i
+                return Actions.ASSIGN_ROW_PERMUTATION, i
             if 1 < perm_count < best_count:
-                best_type, best_idx, best_count = "row", i, perm_count
+                best_action, best_idx, best_count = Actions.ASSIGN_ROW_PERMUTATION, i, perm_count
 
     for i, perms in enumerate(g.col_permutations):
         if i not in g.assigned_cols:
@@ -54,16 +45,16 @@ def get_most_constrained_line(g: "Game") -> Tuple[Optional[str], Optional[int]]:
             if perm_count == 0:
                 return None, None
             if perm_count == 2:
-                return "col", i
+                return Actions.ASSIGN_COL_PERMUTATION, i
             if 1 < perm_count < best_count:
-                best_type, best_idx, best_count = "col", i, perm_count
-    return best_type, best_idx
+                best_action, best_idx, best_count = Actions.ASSIGN_COL_PERMUTATION, i, perm_count
+    return best_action, best_idx
 
 
-def get_least_constrained_perms(g: "Game", decision_type: str, idx: int, perms: Set[Permutation]) -> List[Permutation]:
-    def score(_: None) -> int:
+def get_least_constrained_perms(g: "Game", action: Actions, perms: Set[Permutation]) -> List[Permutation]:
+    def score(_: Permutation) -> int:
         total = 0
-        if decision_type == "row":
+        if action == Actions.ASSIGN_ROW_PERMUTATION:
             for col_idx in range(g.n):
                 if col_idx not in g.assigned_cols:
                     total += len(g.col_permutations[col_idx])
@@ -78,17 +69,17 @@ def get_least_constrained_perms(g: "Game", decision_type: str, idx: int, perms: 
     return sorted(perm_list, key=score)
 
 
-def make_assignment_forward_check(g: "Game", decision_type: str, idx: int, permutation: Permutation) -> bool:
-    if decision_type == "row":
+def make_assignment_forward_check(g: "Game", action: Actions, idx: int, permutation: Permutation) -> bool:
+    if action == Actions.ASSIGN_ROW_PERMUTATION:
         g.row_permutations[idx] = {permutation}
         g.assigned_rows.add(idx)
-        g.queue.append({"type": Actions.ASSIGN_ROW_PERMUTATION, "index": idx})
+        g.queue.append({"type": action, "index": idx})
         for col in range(len(g.col_permutations)):
             g.dirty_intersections.add((idx, col))
     else:
         g.col_permutations[idx] = {permutation}
         g.assigned_cols.add(idx)
-        g.queue.append({"type": Actions.ASSIGN_COL_PERMUTATION, "index": idx})
+        g.queue.append({"type": action, "index": idx})
         for row in range(len(g.row_permutations)):
             g.dirty_intersections.add((row, idx))
 

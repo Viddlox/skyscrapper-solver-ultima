@@ -1,6 +1,6 @@
 import argparse
+import time
 from src.skyscraper.game import Game
-from src.utils.benchmark import benchmark
 
 
 def main():
@@ -10,7 +10,6 @@ def main():
             "Example usage:\n"
             "  python3 main.py '2123232123142221'\n"
             "  python3 main.py '2123232123142221' --prefill '1,2,4 3,1,4'\n"
-            "  python3 main.py '2123232123142221' --debug\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter
     )
@@ -33,18 +32,14 @@ def main():
             "Example: '1,2,4 3,1,4' sets cell (1,2)=4 and (3,1)=4"
         )
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Optional: Enable debug mode with benchmark timing output."
-    )
+
     args = parser.parse_args()
     g = Game()
-    if args.debug:
-        benchmark(g.start, args.clues, args.prefill)
-    else:
-        print('\n' + g.start(args.clues, args.prefill))
-
+    start = time.perf_counter()
+    print(f"\n{g.start(args.clues, args.prefill)}")
+    end = time.perf_counter()
+    duration = (end - start) * 1000
+    print(f"Solved in: {duration:.3f} ms")
 
 if __name__ == "__main__":
     main()

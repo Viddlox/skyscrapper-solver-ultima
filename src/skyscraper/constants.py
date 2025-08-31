@@ -1,10 +1,8 @@
-from typing import List, Set, Deque, Tuple, TypedDict, TypeAlias, Dict
+from typing import List, Set, Deque, Tuple, TypedDict, TypeAlias
 from enum import Enum
 from dataclasses import dataclass, field
 from collections import deque
 
-MAX_ELIMINATION_CACHE_SIZE = 5000
-MAX_INTERSECTION_CACHE_SIZE = 5000
 CELL_SOLVE_PREFILL_THRESHOLD = 0.15
 
 
@@ -21,20 +19,7 @@ class QueueItem(TypedDict):
 
 Permutation: TypeAlias = Tuple[int, ...]
 PermutationSet: TypeAlias = Set[Permutation]
-ClueConstraints: TypeAlias = Tuple[int, ...]
-IntersectionKey: TypeAlias = Tuple[Permutation, Permutation, int]
 Prefill: TypeAlias = Tuple[int, int, int]
-# (decision_type, idx, permutation, state_hash)
-EliminationKey: TypeAlias = Tuple[str, int, Permutation, int]
-EliminationCache: TypeAlias = Dict[EliminationKey, int]
-
-
-@dataclass
-class DecisionPoint:
-    decision_type: str
-    index: int
-    chosen_permutation: Permutation
-    eliminated_permutations: PermutationSet
 
 
 @dataclass
