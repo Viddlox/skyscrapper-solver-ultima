@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING, Tuple, Optional, Set, List
-from .grid_manager_perm import *
+from .grid_manager import *
 from .constants import Actions, Permutation
-from .pre_solve_perm import propagate_intersection_constraints
+from .pre_compute import propagate_intersection_constraints
 
 if TYPE_CHECKING:
     from .game import Game
 
 
-def backtrack(g: "Game") -> bool:
+def dfs(g: "Game") -> bool:
     if g.is_solved():
         return True
 
@@ -21,7 +21,7 @@ def backtrack(g: "Game") -> bool:
     for permutation in sorted_perms:
         g.save_state()
         if make_assignment_forward_check(g, action, idx, permutation):
-            if backtrack(g):
+            if dfs(g):
                 return True
         g.restore_state()
     return False
@@ -73,13 +73,11 @@ def make_assignment_forward_check(g: "Game", action: Actions, idx: int, permutat
     if action == Actions.ASSIGN_ROW_PERMUTATION:
         g.row_permutations[idx] = {permutation}
         g.assigned_rows.add(idx)
-        g.queue.append({"type": action, "index": idx})
         for col in range(len(g.col_permutations)):
             g.dirty_intersections.add((idx, col))
     else:
         g.col_permutations[idx] = {permutation}
         g.assigned_cols.add(idx)
-        g.queue.append({"type": action, "index": idx})
         for row in range(len(g.row_permutations)):
             g.dirty_intersections.add((row, idx))
 

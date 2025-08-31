@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING, Tuple
 from functools import cache
 from itertools import permutations
 
-from .grid_manager_perm import *
-from .constants import Actions, PermutationSet, Prefill
+from .grid_manager import *
+from .constants import PermutationSet, Prefill
 
 if TYPE_CHECKING:
     from .game import Game
@@ -41,11 +41,7 @@ def initialize_permutations(g: "Game") -> bool:
         for row_idx in range(g.n):
             g.dirty_intersections.add((row_idx, i))
 
-    if not propagate_intersection_constraints(g):
-        return False
-
-    initialize_propagation_queue(g)
-    return True
+    return propagate_intersection_constraints(g)
 
 
 def propagate_intersection_constraints(g: "Game") -> bool:
@@ -83,19 +79,8 @@ def propagate_intersection_constraints(g: "Game") -> bool:
 
         if not g.row_permutations[row_idx] or not g.col_permutations[col_idx]:
             return False
+
     return True
-
-
-def initialize_propagation_queue(g: "Game") -> None:
-    for i in range(g.n):
-        if len(g.row_permutations[i]) == 1:
-            g.queue.append(
-                {"type": Actions.ASSIGN_ROW_PERMUTATION, "index": i})
-            g.assigned_rows.add(i)
-        if len(g.col_permutations[i]) == 1:
-            g.queue.append(
-                {"type": Actions.ASSIGN_COL_PERMUTATION, "index": i})
-            g.assigned_cols.add(i)
 
 
 @cache
