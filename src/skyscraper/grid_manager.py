@@ -1,5 +1,4 @@
 from typing import List, Tuple
-from functools import cache
 
 from .constants import Permutation
 
@@ -22,22 +21,62 @@ def get_clues_for_col(clues: List[int], n: int, col_index: int) -> Tuple[int, in
     return (clues[top_idx], clues[bottom_idx])
 
 
-@cache
-def count_visible_reverse(perm: "Permutation") -> int:
+def count_visible_start(perm: "Permutation", target: int) -> bool:
+    if target <= 0:
+        return target == 0
+    
+    visible, max_height = 0, 0
+    for height in perm:
+        if height > max_height:
+            visible += 1
+            max_height = height
+            if visible > target:
+                return False
+    return visible == target
+
+
+def count_visible_reverse(perm: "Permutation", target: int) -> bool:
+    if target <= 0:
+        return target == 0
+        
     visible, max_height = 0, 0
     for i in range(len(perm) - 1, -1, -1):
         height = perm[i]
         if height > max_height:
             visible += 1
             max_height = height
-    return visible
+            if visible > target:
+                return False
+    return visible == target
 
+def check_visibility_fast(perm, clue, opp_clue):
+    if clue > 0:
+        visible = 0
+        max_height = 0
+        
+        for height in perm:
+            if height > max_height:
+                visible += 1
+                max_height = height
+                if visible > clue:
+                    return False
+        
+        if visible != clue:
+            return False
 
-@cache
-def count_visible_start(perm: "Permutation") -> int:
-    visible, max_height = 0, 0
-    for height in perm:
-        if height > max_height:
-            visible += 1
-            max_height = height
-    return visible
+    if opp_clue > 0:
+        visible = 0
+        max_height = 0
+        
+        for i in range(len(perm) - 1, -1, -1):
+            height = perm[i]
+            if height > max_height:
+                visible += 1
+                max_height = height
+                if visible > opp_clue:
+                    return False
+        
+        if visible != opp_clue:
+            return False
+
+    return True

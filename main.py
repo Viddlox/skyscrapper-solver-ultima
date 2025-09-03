@@ -9,7 +9,7 @@ def main():
         epilog=(
             "Example usage:\n"
             "  python3 main.py '2123232123142221'\n"
-            "  python3 main.py '2123232123142221' --prefill '1,2,4 3,1,4'\n"
+            "  python3 main.py '2123232123142221' '1,2,4 3,1,4'\n"
         ),
         formatter_class=argparse.RawTextHelpFormatter
     )
@@ -23,7 +23,7 @@ def main():
         )
     )
     parser.add_argument(
-        "--prefill",
+        "prefill",
         type=str,
         default="",
         help=(

@@ -51,9 +51,7 @@ def propagate_intersection_constraints(g: "Game") -> bool:
         row_perms = g.row_permutations[row_idx]
         col_perms = g.col_permutations[col_idx]
 
-        row_values = {perm[col_idx] for perm in row_perms}
-        col_values = {perm[row_idx] for perm in col_perms}
-        valid_values = row_values & col_values
+        valid_values = {perm[col_idx] for perm in row_perms} & {perm[row_idx] for perm in col_perms}
 
         if not valid_values:
             return False
@@ -89,60 +87,52 @@ def generate_permutations(
     clue: int, opp_clue: int, prefill_constraints: Tuple[Prefill, ...]
 ) -> PermutationSet:
 
-    if 1 <= len(prefill_constraints) <= 3:
+    if len(prefill_constraints):
         return resolve_prefilled_permutations(
             n, full_domain, clue, opp_clue, prefill_constraints
         )
 
-    if not prefill_constraints:
-        def check_prefill(_): return True
-    else:
-        def check_prefill(perm): return all(
-            perm[pos] == val for pos, val in prefill_constraints)
-
     if clue == 0 and opp_clue == 0:
         return {
             perm for perm in permutations(full_domain)
-            if check_prefill(perm)
         }
 
     if clue == n:
         perm = tuple(range(1, n + 1))
-        return {perm} if (opp_clue == 0 or count_visible_reverse(perm) == opp_clue) and check_prefill(perm) else set()
+        return {perm} if (opp_clue == 0 or count_visible_reverse(perm, opp_clue)) else set()
 
     if opp_clue == n:
         perm = tuple(range(n, 0, -1))
-        return {perm} if count_visible_start(perm) == clue and check_prefill(perm) else set()
+        return {perm} if count_visible_start(perm, clue) else set()
 
     if clue == 1:
         return {
             (n,) + perm for perm in permutations(cell_range)
-            if check_prefill((n,) + perm) and count_visible_reverse((n,) + perm) == opp_clue
+            if count_visible_reverse((n,) + perm, opp_clue)
         }
 
     if opp_clue == 1:
         return {
             perm + (n,) for perm in permutations(cell_range)
-            if check_prefill(perm + (n,)) and count_visible_start(perm + (n,)) == clue
+            if count_visible_start(perm + (n,), clue)
         }
 
     if opp_clue == 0:
         return {
             perm for perm in permutations(full_domain)
-            if check_prefill(perm) and count_visible_start(perm) == clue
+            if count_visible_start(perm, clue)
         }
 
     if clue == 0:
         return {
             perm for perm in permutations(full_domain)
-            if check_prefill(perm) and count_visible_reverse(perm) == opp_clue
+            if count_visible_reverse(perm, opp_clue)
         }
 
     return {
         perm for perm in permutations(full_domain)
-        if check_prefill(perm)
-        and count_visible_start(perm) == clue
-        and count_visible_reverse(perm) == opp_clue
+        if count_visible_start(perm, clue)
+        and count_visible_reverse(perm, opp_clue)
     }
 
 
@@ -151,7 +141,6 @@ def resolve_prefilled_permutations(
     n: int, full_domain: Tuple[int, ...], clue: int, opp_clue: int,
     prefill_constraints: Tuple[Prefill, ...]
 ) -> PermutationSet:
-
     template = [None] * n
     used_values = set()
 
@@ -162,15 +151,26 @@ def resolve_prefilled_permutations(
     free_positions = [i for i in range(n) if template[i] is None]
     available_values = tuple(v for v in full_domain if v not in used_values)
 
-    valid_perms = set()
-    for perm_values in permutations(available_values):
-        complete = template[:]
-        for i, pos in enumerate(free_positions):
-            complete[pos] = perm_values[i]
+    if len(available_values) != len(free_positions):
+        return set()
 
-        perm_tuple = tuple(complete)
-        if ((clue == 0 or count_visible_start(perm_tuple) == clue) and
-                (opp_clue == 0 or count_visible_reverse(perm_tuple) == opp_clue)):
-            valid_perms.add(perm_tuple)
+    if clue == 0 and opp_clue == 0:
+        curr_perm = template[:]
+        valid_perms = set()
+        for perm_values in permutations(available_values):
+            for i, pos in enumerate(free_positions):
+                curr_perm[pos] = perm_values[i]
+            valid_perms.add(tuple(curr_perm))
+        return valid_perms
+
+    curr_perm = template[:]
+    valid_perms = set()
+
+    for perm_values in permutations(available_values):
+        for i, pos in enumerate(free_positions):
+            curr_perm[pos] = perm_values[i]
+
+        if count_visible_start(curr_perm, clue) and count_visible_reverse(curr_perm, opp_clue):
+            valid_perms.add(tuple(curr_perm))
 
     return valid_perms
