@@ -16,9 +16,7 @@ def dfs(g: "Game") -> bool:
         return False
 
     perms = g.row_permutations[idx] if action == Actions.ASSIGN_ROW_PERMUTATION else g.col_permutations[idx]
-    sorted_perms = get_least_constrained_perms(g, action, perms)
-
-    for permutation in sorted_perms:
+    for permutation in perms:
         g.save_state()
         if make_assignment_forward_check(g, action, idx, permutation):
             if dfs(g):
@@ -49,24 +47,6 @@ def get_most_constrained_line(g: "Game") -> Tuple[Optional[Actions], Optional[in
             if 1 < perm_count < best_count:
                 best_action, best_idx, best_count = Actions.ASSIGN_COL_PERMUTATION, i, perm_count
     return best_action, best_idx
-
-
-def get_least_constrained_perms(g: "Game", action: Actions, perms: Set[Permutation]) -> List[Permutation]:
-    def score(_: Permutation) -> int:
-        total = 0
-        if action == Actions.ASSIGN_ROW_PERMUTATION:
-            for col_idx in range(g.n):
-                if col_idx not in g.assigned_cols:
-                    total += len(g.col_permutations[col_idx])
-        else:
-            for row_idx in range(g.n):
-                if row_idx not in g.assigned_rows:
-                    total += len(g.row_permutations[row_idx])
-        return total
-    perm_list = list(perms)
-    if len(perm_list) <= 3:
-        return perm_list
-    return sorted(perm_list, key=score)
 
 
 def make_assignment_forward_check(g: "Game", action: Actions, idx: int, permutation: Permutation) -> bool:

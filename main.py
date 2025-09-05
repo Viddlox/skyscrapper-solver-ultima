@@ -23,7 +23,7 @@ def main():
         )
     )
     parser.add_argument(
-        "prefill",
+        "--prefill",
         type=str,
         default="",
         help=(
