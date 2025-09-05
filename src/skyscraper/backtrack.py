@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Tuple, Optional, Set, List
+from typing import TYPE_CHECKING, Tuple, Optional
 from .grid_manager import *
 from .constants import Actions, Permutation
 from .pre_compute import propagate_intersection_constraints
@@ -23,6 +23,7 @@ def dfs(g: "Game") -> bool:
                 return True
         g.restore_state()
     return False
+
 
 def get_most_constrained_line(g: "Game") -> Tuple[Optional[Actions], Optional[int]]:
     best_action, best_idx, best_count = None, None, float('inf')
