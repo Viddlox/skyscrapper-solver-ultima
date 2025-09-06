@@ -2,3 +2,5 @@ __pycache__
 /src/tests/**
 build
 .vscode
+*.c
+*.pyd

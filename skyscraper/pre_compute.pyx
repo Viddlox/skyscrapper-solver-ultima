@@ -111,62 +111,6 @@ cdef bint propagate_intersection_constraints(Game g):
     return True
 
 @cache
-def resolve_prefilled_permutations(int n, tuple full_domain, int clue, int opp_clue, tuple prefill_constraints):
-    cdef int pos, val, i
-    cdef int perm_len = len(prefill_constraints)
-    cdef int free_pos_len, avail_vals_len
-    cdef int[::1] perm_arr
-    
-    template = [None] * n
-    used_values = set()
-
-    for i in range(perm_len):
-        pos, val = prefill_constraints[i]
-        template[pos] = val
-        used_values.add(val)
-
-    free_positions = []
-    for i in range(n):
-        if template[i] is None:
-            free_positions.append(i)
-    
-    available_values = []
-    for v in full_domain:
-        if v not in used_values:
-            available_values.append(v)
-    available_values = tuple(available_values)
-
-    free_pos_len = len(free_positions)
-    avail_vals_len = len(available_values)
-
-    if avail_vals_len != free_pos_len:
-        return set()
-
-    if clue == 0 and opp_clue == 0:
-        curr_perm = template[:]
-        valid_perms = set()
-        for perm_values in permutations(available_values):
-            for i in range(free_pos_len):
-                curr_perm[free_positions[i]] = perm_values[i]
-            valid_perms.add(tuple(curr_perm))
-        return valid_perms
-
-    curr_perm = template[:]
-    valid_perms = set()
-
-    for perm_values in permutations(available_values):
-        for i in range(free_pos_len):
-            curr_perm[free_positions[i]] = perm_values[i]
-        
-        curr_tuple = tuple(curr_perm)
-        if count_visible_start(curr_tuple, clue) and count_visible_reverse(curr_tuple, opp_clue):
-            valid_perms.add(curr_tuple)
-
-    return valid_perms
-
-from array import array
-
-@cache
 def generate_permutations(int n, tuple full_domain, tuple cell_range, int clue, int opp_clue, tuple prefill_constraints):
     cdef int perm_len = len(prefill_constraints)
 
@@ -222,4 +166,57 @@ def generate_permutations(int n, tuple full_domain, tuple cell_range, int clue, 
     for perm in permutations(full_domain):
         if count_visible_start(perm, clue) and count_visible_reverse(perm, opp_clue):
             valid_perms.add(perm)
+    return valid_perms
+
+@cache
+def resolve_prefilled_permutations(int n, tuple full_domain, int clue, int opp_clue, tuple prefill_constraints):
+    cdef int pos, val, i
+    cdef int perm_len = len(prefill_constraints)
+    cdef int free_pos_len, avail_vals_len
+    
+    template = [None] * n
+    used_values = set()
+
+    for i in range(perm_len):
+        pos, val = prefill_constraints[i]
+        template[pos] = val
+        used_values.add(val)
+
+    free_positions = []
+    for i in range(n):
+        if template[i] is None:
+            free_positions.append(i)
+    
+    available_values = []
+    for v in full_domain:
+        if v not in used_values:
+            available_values.append(v)
+    available_values = tuple(available_values)
+
+    free_pos_len = len(free_positions)
+    avail_vals_len = len(available_values)
+
+    if avail_vals_len != free_pos_len:
+        return set()
+
+    if clue == 0 and opp_clue == 0:
+        curr_perm = template[:]
+        valid_perms = set()
+        for perm_values in permutations(available_values):
+            for i in range(free_pos_len):
+                curr_perm[free_positions[i]] = perm_values[i]
+            valid_perms.add(tuple(curr_perm))
+        return valid_perms
+
+    curr_perm = template[:]
+    valid_perms = set()
+
+    for perm_values in permutations(available_values):
+        for i in range(free_pos_len):
+            curr_perm[free_positions[i]] = perm_values[i]
+        
+        curr_tuple = tuple(curr_perm)
+        if count_visible_start(curr_tuple, clue) and count_visible_reverse(curr_tuple, opp_clue):
+            valid_perms.add(curr_tuple)
+
     return valid_perms
